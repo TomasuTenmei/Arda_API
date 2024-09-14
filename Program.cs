@@ -5,9 +5,13 @@ using Microsoft.AspNetCore.Identity;
 using System.Text;
 using Arda_API.Models;
 using Arda_API.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurez les services
+// Documentation
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -30,7 +34,7 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? ""))
     };
 });
 
@@ -38,25 +42,25 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Utiliser l'authentification et l'autorisation
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Appeler la méthode d'initialisation des données
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
+        var context = services.GetRequiredService<ApplicationDbContext>();
         await DbInitializer.InitializeAsync(services);
+        await DbInitializer.InitializeDataAsync(context); // Appel de la méthode d'initialisation des données
     }
     catch (Exception ex)
     {
-        // Gérer les erreurs ici
         Console.WriteLine($"Erreur lors de l'initialisation de la base de données : {ex.Message}");
     }
 }
+
 
 app.Run();
