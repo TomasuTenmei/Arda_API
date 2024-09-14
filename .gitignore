@@ -484,3 +484,6 @@ $RECYCLE.BIN/
 *.swp
 
 obj/
+bin/
+*.csproj
+*.sln
